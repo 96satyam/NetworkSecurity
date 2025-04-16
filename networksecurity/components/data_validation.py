@@ -28,19 +28,16 @@ class DataValidation:
         except Exception as e:
             raise NetworkSecurityException(e, sys)
         
-    def validate_number_of_columns(self, dataframe: pd.DataFrame)-> bool:
+    def validate_number_of_columns(self,dataframe:pd.DataFrame)->bool:
         try:
-            number_of_columns = len(self._schema_config)
-            logging.info(f"Number of columns in the schema: {number_of_columns}")
-            logging.info(f"Number of columns in the dataframe: {len(dataframe.columns)}")
-            if len(dataframe.columns) == number_of_columns:
-                logging.info("Number of columns in the dataframe is valid.")
+            number_of_columns=len(self._schema_config)
+            logging.info(f"Required number of columns:{number_of_columns}")
+            logging.info(f"Data frame has columns:{len(dataframe.columns)}")
+            if len(dataframe.columns)==number_of_columns:
                 return True
-            else:
-                logging.info("Number of columns in the dataframe is invalid.")
-                return False
+            return False
         except Exception as e:
-            raise NetworkSecurityException(e, sys)
+            raise NetworkSecurityException(e,sys)
         
     def detect_dataset_drift(self, base_df, current_df, threshold=0.05)-> bool:
         try:
@@ -87,15 +84,12 @@ class DataValidation:
 
             # validate the number of columns in the train and test data
 
-            status = self.validate_number_of_columns(train_dataframe)
+            status=self.validate_number_of_columns(dataframe=train_dataframe)
             if not status:
-                error_message = f"Number of columns in the train data is not valid. Expected: {len(self._schema_config)}, Found: {len(train_dataframe.columns)}"
-                logging.error(error_message)
-            
-            status = self.validate_number_of_columns(test_dataframe)
+                error_message=f"Train dataframe does not contain all columns.\n"
+            status = self.validate_number_of_columns(dataframe=test_dataframe)
             if not status:
-                error_message = f"Number of columns in the test data is not valid. Expected: {len(self._schema_config)}, Found: {len(test_dataframe.columns)}"
-                logging.error(error_message)
+                error_message=f"Test dataframe does not contain all columns.\n"  
             
             # check datadrift
             status = self.detect_dataset_drift(base_df =train_dataframe,current_df =  test_dataframe)

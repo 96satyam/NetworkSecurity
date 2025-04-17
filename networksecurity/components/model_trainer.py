@@ -23,6 +23,11 @@ from sklearn.ensemble import (
     GradientBoostingClassifier,
     RandomForestClassifier,
 )
+import mlflow
+
+import dagshub
+dagshub.init(repo_owner='96satyam', repo_name='NetworkSecurity', mlflow=True)
+
 
 class ModelTrainer:
     def __init__(self, model_trainer_config:ModelTrainerConfig,
@@ -33,6 +38,19 @@ class ModelTrainer:
             
         except Exception as e:
             raise NetworkSecurityException(e, sys)
+        
+    def track_mlflow(self, best_model, classificationmetric):
+            with mlflow.start_run():
+                f1_score = classificationmetric.f1_score
+                precision_score = classificationmetric.precision_score
+                recall_score = classificationmetric.recall_score
+
+                mlflow.log_metric("f1_score", f1_score)
+                mlflow.log_metric("precision_score", precision_score)
+                mlflow.log_metric("recall_score", recall_score)
+
+                mlflow.sklearn.log_model(best_model, "model")
+
         
 
 
@@ -91,11 +109,14 @@ class ModelTrainer:
 
         classification_train_metric = get_classification_score(y_train, y_train_pred)
 
-        # Track the mlflow
+        # Track the experiment with the mlflow
+
+        self.track_mlflow(best_model, classification_train_metric)
 
         y_test_pred = best_model.predict(x_test)
         classification_test_metric = get_classification_score(y_test, y_test_pred)
-
+        
+        self.track_mlflow(best_model, classification_test_metric)
         # Save the model
 
         preprocessor = load_object(file_path = self.data_transformation_artifact.transformed_object_file_path)
@@ -105,6 +126,8 @@ class ModelTrainer:
 
         Network_Model = NetworkModel(preprocessor=preprocessor, model=best_model)
         save_object(file_path=self.model_trainer_config.trained_model_file_path, obj=Network_Model)
+
+        save_object("final_model/model.pkl", best_model)
 
         ## Model Trainer Artifact
         model_trainer_artifact = ModelTrainerArtifact(trained_model_file_path=self.model_trainer_config.trained_model_file_path,

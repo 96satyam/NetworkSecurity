@@ -49,6 +49,11 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Cleanup Docker to free space
+        run: |
+          docker system prune -af
+          docker volume prune -f
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -86,7 +91,7 @@ jobs:
 
       - name: Stop and remove existing container if running
         run: |
-            docker ps -a --filter "name=security" --format "{{.ID}}" | xargs -r docker rm -f
+          docker ps -a --filter "name=security" --format "{{.ID}}" | xargs -r docker rm -f
 
       - name: Run Docker Image to serve users
         env:

@@ -33,6 +33,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Free Up Disk Space
+        run: |
+          echo "Cleaning unnecessary SDKs and tools..."
+          sudo rm -rf /usr/share/dotnet /opt/ghc "$AGENT_TOOLSDIRECTORY" || true
+          echo "Running Docker prune..."
+          docker system prune -af || true
+          docker volume prune -f || true
+          echo "Disk usage after cleanup:"
+          df -h
+
       - name: Install Utilities
         run: |
           sudo apt-get update
@@ -49,11 +59,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Cleanup Docker to free space
-        run: |
-          docker system prune -af
-          docker volume prune -f
-
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -61,6 +66,8 @@ jobs:
           ECR_REPOSITORY: security
           IMAGE_TAG: latest
         run: |
+          echo "Disk space before Docker build:"
+          df -h
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
